@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const CalculatorApp());
@@ -35,6 +36,14 @@ class _CalculatorHomeState extends State<CalculatorHome> {
   double _num1 = 0;
   bool _newNumber = true;
   final NumberFormat _formatter = NumberFormat('#,###.##########');
+
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   String _formatNumber(String number) {
     if (number == "0") return "0";
@@ -129,67 +138,112 @@ class _CalculatorHomeState extends State<CalculatorHome> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('계산기'),
-      ),
-      body: Column(
-        children: [
-          Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.symmetric(
-              vertical: 24,
-              horizontal: 12,
-            ),
-            child: Text(
-              _output,
-              style: const TextStyle(
-                fontSize: 48,
-                fontWeight: FontWeight.bold,
+    return RawKeyboardListener(
+        focusNode: _focusNode,
+        autofocus: true,
+        onKey: (RawKeyEvent event) {
+          if (event is RawKeyDownEvent) {
+            final key = event.character;
+            if (key == null) return;
+            print('Pressed key: $key');
+            // 숫자키
+            if (RegExp(r'^[0-9]$').hasMatch(key)) {
+              _onButtonPressed(key);
+            } else if (key == '+' || key == '-' || key == '*' || key == '/') {
+              // 연산자 키
+              String op = key;
+              if (op == '*') op = '×';
+              if (op == '/') op = '÷';
+              _onButtonPressed(op);
+            } else if (key == '=' || key == '\n') {
+              _onButtonPressed('=');
+            } else if (key.toUpperCase() == 'C') {
+              _onButtonPressed('C');
+            }
+            // Backspace는 별도 처리
+            if (event.logicalKey.keyLabel == 'Backspace') {
+              setState(() {
+                if (_currentNumber.isNotEmpty) {
+                  _currentNumber =
+                      _currentNumber.substring(0, _currentNumber.length - 1);
+                  if (_currentNumber.isEmpty) {
+                    _output = '0';
+                  } else {
+                    _output = _formatNumber(_currentNumber);
+                  }
+                }
+              });
+            } else if (key.toUpperCase() == 'C') {
+              _onButtonPressed('C');
+            }
+          }
+        },
+        child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              _focusNode.requestFocus();
+            },
+            child: Scaffold(
+              appBar: AppBar(
+                title: const Text('계산기'),
               ),
-            ),
-          ),
-          Expanded(
-            child: Divider(),
-          ),
-          Column(
-            children: [
-              Row(
+              body: Column(
                 children: [
-                  _buildButton("7"),
-                  _buildButton("8"),
-                  _buildButton("9"),
-                  _buildButton("÷", color: Colors.orange),
+                  Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 24,
+                      horizontal: 12,
+                    ),
+                    child: Text(
+                      _output,
+                      style: const TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Divider(),
+                  ),
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          _buildButton("7"),
+                          _buildButton("8"),
+                          _buildButton("9"),
+                          _buildButton("÷", color: Colors.orange),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          _buildButton("4"),
+                          _buildButton("5"),
+                          _buildButton("6"),
+                          _buildButton("×", color: Colors.orange),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          _buildButton("1"),
+                          _buildButton("2"),
+                          _buildButton("3"),
+                          _buildButton("-", color: Colors.orange),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          _buildButton("0"),
+                          _buildButton("C", color: Colors.red),
+                          _buildButton("=", color: Colors.green),
+                          _buildButton("+", color: Colors.orange),
+                        ],
+                      ),
+                    ],
+                  ),
                 ],
               ),
-              Row(
-                children: [
-                  _buildButton("4"),
-                  _buildButton("5"),
-                  _buildButton("6"),
-                  _buildButton("×", color: Colors.orange),
-                ],
-              ),
-              Row(
-                children: [
-                  _buildButton("1"),
-                  _buildButton("2"),
-                  _buildButton("3"),
-                  _buildButton("-", color: Colors.orange),
-                ],
-              ),
-              Row(
-                children: [
-                  _buildButton("0"),
-                  _buildButton("C", color: Colors.red),
-                  _buildButton("=", color: Colors.green),
-                  _buildButton("+", color: Colors.orange),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+            )));
   }
 }
