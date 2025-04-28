@@ -38,6 +38,7 @@ class _CalculatorHomeState extends State<CalculatorHome> {
   final NumberFormat _formatter = NumberFormat('#,###.##########');
 
   final FocusNode _focusNode = FocusNode();
+  List<String> _history = [];
 
   @override
   void dispose() {
@@ -94,6 +95,10 @@ class _CalculatorHomeState extends State<CalculatorHome> {
               break;
           }
 
+          // 계산 히스토리 추가
+          _history.add(
+              '${_formatter.format(_num1)} $_operation ${_formatter.format(num2)} = ${_formatter.format(result)}');
+
           _output = result.toString();
           if (_output.endsWith(".0")) {
             _output = _output.substring(0, _output.length - 2);
@@ -143,24 +148,7 @@ class _CalculatorHomeState extends State<CalculatorHome> {
         autofocus: true,
         onKey: (RawKeyEvent event) {
           if (event is RawKeyDownEvent) {
-            final key = event.character;
-            if (key == null) return;
-            print('Pressed key: $key');
-            // 숫자키
-            if (RegExp(r'^[0-9]$').hasMatch(key)) {
-              _onButtonPressed(key);
-            } else if (key == '+' || key == '-' || key == '*' || key == '/') {
-              // 연산자 키
-              String op = key;
-              if (op == '*') op = '×';
-              if (op == '/') op = '÷';
-              _onButtonPressed(op);
-            } else if (key == '=' || key == '\n') {
-              _onButtonPressed('=');
-            } else if (key.toUpperCase() == 'C') {
-              _onButtonPressed('C');
-            }
-            // Backspace는 별도 처리
+            // 1. Backspace 우선 처리
             if (event.logicalKey.keyLabel == 'Backspace') {
               setState(() {
                 if (_currentNumber.isNotEmpty) {
@@ -173,6 +161,40 @@ class _CalculatorHomeState extends State<CalculatorHome> {
                   }
                 }
               });
+              return;
+            }
+            // 2. Enter 우선 처리
+            if (event.logicalKey.keyLabel == 'Enter' ||
+                event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+              _onButtonPressed('=');
+              setState(() {
+                _newNumber = true;
+              });
+              return;
+            }
+            // 3. 나머지 키 입력 처리
+            final key = event.character;
+            if (key == null) return;
+            print('Pressed key: $key, label: \'${event.logicalKey.keyLabel}\'');
+            print('Pressed key label: ${event.logicalKey.keyLabel}');
+            if (RegExp(r'^[0-9]$').hasMatch(key)) {
+              setState(() {
+                if (_newNumber) {
+                  _currentNumber = '';
+                  _output = '';
+                  _newNumber = false;
+                }
+                _onButtonPressed(key);
+              });
+            } else if (key == '+' || key == '-' || key == '*' || key == '/') {
+              String op = key;
+              if (op == '*') op = '×';
+              if (op == '/') op = '÷';
+              _onButtonPressed(op);
+            } else if (key == '=' || key == '\n') {
+              _onButtonPressed('=');
+            } else if (key.toUpperCase() == 'C') {
+              _onButtonPressed('C');
             } else if (key.toUpperCase() == 'C') {
               _onButtonPressed('C');
             }
@@ -184,66 +206,99 @@ class _CalculatorHomeState extends State<CalculatorHome> {
               _focusNode.requestFocus();
             },
             child: Scaffold(
-              appBar: AppBar(
-                title: const Text('계산기'),
-              ),
-              body: Column(
-                children: [
-                  Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 24,
-                      horizontal: 12,
-                    ),
-                    child: Text(
-                      _output,
-                      style: const TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
+                appBar: AppBar(
+                  title: const Text('계산기'),
+                ),
+                body: Column(
+                  children: [
+                    // 계산 히스토리 영역
+                    if (_history.isNotEmpty)
+                      Container(
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: _history.reversed
+                              .take(3) // 최근 3개만 표시
+                              .map((h) => Text(
+                                    h,
+                                    style: const TextStyle(
+                                        fontSize: 16, color: Colors.grey),
+                                  ))
+                              .toList(),
+                        ),
+                      ),
+                    // 입력 상태(수식) 영역
+                    Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 4, horizontal: 12),
+                      child: Text(
+                        (_operation.isNotEmpty && !_newNumber)
+                            ? '${_formatter.format(_num1)} $_operation'
+                            : (_operation.isNotEmpty
+                                ? '${_formatter.format(_num1)} $_operation'
+                                : ''),
+                        style: const TextStyle(
+                            fontSize: 20, color: Colors.black54),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: Divider(),
-                  ),
-                  Column(
-                    children: [
-                      Row(
-                        children: [
-                          _buildButton("7"),
-                          _buildButton("8"),
-                          _buildButton("9"),
-                          _buildButton("÷", color: Colors.orange),
-                        ],
+                    // 메인 숫자 출력 영역
+                    Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 24,
+                        horizontal: 12,
                       ),
-                      Row(
-                        children: [
-                          _buildButton("4"),
-                          _buildButton("5"),
-                          _buildButton("6"),
-                          _buildButton("×", color: Colors.orange),
-                        ],
+                      child: Text(
+                        _output,
+                        style: const TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      Row(
-                        children: [
-                          _buildButton("1"),
-                          _buildButton("2"),
-                          _buildButton("3"),
-                          _buildButton("-", color: Colors.orange),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          _buildButton("0"),
-                          _buildButton("C", color: Colors.red),
-                          _buildButton("=", color: Colors.green),
-                          _buildButton("+", color: Colors.orange),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            )));
+                    ),
+                    Expanded(
+                      child: Divider(),
+                    ),
+                    Column(
+                      children: [
+                        Row(
+                          children: [
+                            _buildButton("7"),
+                            _buildButton("8"),
+                            _buildButton("9"),
+                            _buildButton("÷", color: Colors.orange),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            _buildButton("4"),
+                            _buildButton("5"),
+                            _buildButton("6"),
+                            _buildButton("×", color: Colors.orange),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            _buildButton("1"),
+                            _buildButton("2"),
+                            _buildButton("3"),
+                            _buildButton("-", color: Colors.orange),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            _buildButton("0"),
+                            _buildButton("C", color: Colors.red),
+                            _buildButton("=", color: Colors.green),
+                            _buildButton("+", color: Colors.orange),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ))));
   }
 }
