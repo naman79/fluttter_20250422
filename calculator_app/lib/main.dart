@@ -38,7 +38,7 @@ class _CalculatorHomeState extends State<CalculatorHome> {
   final NumberFormat _formatter = NumberFormat('#,###.##########');
 
   final FocusNode _focusNode = FocusNode();
-  List<String> _history = [];
+  final List<String> _history = [];
 
   @override
   void dispose() {
@@ -259,7 +259,7 @@ class _CalculatorHomeState extends State<CalculatorHome> {
                         ),
                       ),
                     ),
-                    Expanded(
+                    const Expanded(
                       child: Divider(),
                     ),
                     Column(
