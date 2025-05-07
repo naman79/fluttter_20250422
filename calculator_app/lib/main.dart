@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
+import 'history_page.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();  // 플러그인 초기화를 위해 추가
   runApp(const CalculatorApp());
 }
 
@@ -15,7 +18,8 @@ class CalculatorApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: '계산기',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.brown,
+        scaffoldBackgroundColor: const Color(0xFFF5F5DC), // 베이지색 배경
       ),
       home: const CalculatorHome(),
     );
@@ -39,6 +43,7 @@ class _CalculatorHomeState extends State<CalculatorHome> {
 
   final FocusNode _focusNode = FocusNode();
   final List<String> _history = [];
+  final List<DateTime> _historyTimestamps = [];
 
   @override
   void dispose() {
@@ -100,6 +105,7 @@ class _CalculatorHomeState extends State<CalculatorHome> {
           // 계산 히스토리 추가
           _history.add(
               '${_formatter.format(_num1)} $_operation ${_formatter.format(num2)} = ${_formatter.format(result)}');
+          _historyTimestamps.add(DateTime.now());
 
           _output = result.toString();
           if (_output.endsWith(".0")) {
@@ -127,15 +133,19 @@ class _CalculatorHomeState extends State<CalculatorHome> {
         margin: const EdgeInsets.all(4),
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: color ?? Colors.grey[300],
+            backgroundColor: color ?? const Color(0xFF8B4513), // 갈색 숫자 키
             padding: const EdgeInsets.all(24),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
           onPressed: () => _onButtonPressed(buttonText),
           child: Text(
             buttonText,
-            style: const TextStyle(
+            style: GoogleFonts.robotoMono(
               fontSize: 24,
               fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
         ),
@@ -210,6 +220,23 @@ class _CalculatorHomeState extends State<CalculatorHome> {
             child: Scaffold(
                 appBar: AppBar(
                   title: const Text('계산기'),
+                  backgroundColor: const Color(0xFF8B4513), // 진한 갈색 앱바
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.history),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HistoryPage(
+                              history: _history,
+                              timestamps: _historyTimestamps,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
                 body: Column(
                   children: [
@@ -253,12 +280,35 @@ class _CalculatorHomeState extends State<CalculatorHome> {
                         vertical: 24,
                         horizontal: 12,
                       ),
-                      child: Text(
-                        _output,
-                        style: const TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      decoration: const BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
+                      margin: const EdgeInsets.all(12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            _output,
+                            style: GoogleFonts.robotoMono(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.copy, color: Colors.white),
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: _output));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('결과가 클립보드에 복사되었습니다'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
                     const Expanded(
@@ -271,7 +321,7 @@ class _CalculatorHomeState extends State<CalculatorHome> {
                             _buildButton("7"),
                             _buildButton("8"),
                             _buildButton("9"),
-                            _buildButton("÷", color: Colors.orange),
+                            _buildButton("÷", color: const Color(0xFFD2B48C)), // 진한 베이지색
                           ],
                         ),
                         Row(
@@ -279,7 +329,7 @@ class _CalculatorHomeState extends State<CalculatorHome> {
                             _buildButton("4"),
                             _buildButton("5"),
                             _buildButton("6"),
-                            _buildButton("×", color: Colors.orange),
+                            _buildButton("×", color: const Color(0xFFD2B48C)),
                           ],
                         ),
                         Row(
@@ -287,7 +337,7 @@ class _CalculatorHomeState extends State<CalculatorHome> {
                             _buildButton("1"),
                             _buildButton("2"),
                             _buildButton("3"),
-                            _buildButton("-", color: Colors.orange),
+                            _buildButton("-", color: const Color(0xFFD2B48C)),
                           ],
                         ),
                         Row(
@@ -295,7 +345,7 @@ class _CalculatorHomeState extends State<CalculatorHome> {
                             _buildButton("0"),
                             _buildButton("C", color: Colors.red),
                             _buildButton("=", color: Colors.green),
-                            _buildButton("+", color: Colors.orange),
+                            _buildButton("+", color: const Color(0xFFD2B48C)),
                           ],
                         ),
                       ],
