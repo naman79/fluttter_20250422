@@ -74,6 +74,8 @@ class _CalculatorHomeState extends State<CalculatorHome> {
           _num1 = double.parse(_currentNumber.replaceAll(',', ''));
           _operation = buttonText;
           _newNumber = true;
+          _currentNumber = "0";
+          _output = "0";
         }
       } else if (buttonText == "=") {
         if (_currentNumber.isNotEmpty && _operation.isNotEmpty) {
